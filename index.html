@@ -331,9 +331,8 @@ function updateFilterTags() {
 async function applyFilters() {
     currentPage = 1;
     updateFilterTags();
+    switchTab('records');
     const loads = [loadStats(), loadRecords(), loadHeatmap()];
-    if (currentTab === 'map') loads.push(loadMap());
-    if (currentTab === 'hotspots') loads.push(loadHotspots());
     await Promise.all(loads);
 }
 
