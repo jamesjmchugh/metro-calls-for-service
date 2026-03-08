@@ -51,6 +51,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.handle_stats(parsed)
         elif parsed.path == '/api/heatmap':
             self.handle_heatmap(parsed)
+        elif parsed.path == '/api/map':
+            self.handle_map(parsed)
+        elif parsed.path == '/api/top-locations':
+            self.handle_top_locations(parsed)
         else:
             super().do_GET()
 
@@ -132,6 +136,71 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 heatmap[key] = heatmap.get(key, 0) + 1
         
         self.json_response({'heatmap': heatmap, 'total': len(filtered)})
+
+    def handle_map(self, parsed):
+        params = urllib.parse.parse_qs(parsed.query)
+        filtered = self.apply_filters(params)
+        
+        geocache_file = os.path.join(BASE_DIR, 'geocache.json')
+        geocache = {}
+        if os.path.exists(geocache_file):
+            with open(geocache_file) as f:
+                geocache = json.load(f)
+        
+        # Aggregate calls by location, attach geo coords
+        by_location = {}
+        for r in filtered:
+            loc = r['location'].strip()
+            if not loc:
+                continue
+            if loc not in by_location:
+                by_location[loc] = {'count': 0, 'types': {}}
+            by_location[loc]['count'] += 1
+            ct = r['call_type']
+            by_location[loc]['types'][ct] = by_location[loc]['types'].get(ct, 0) + 1
+        
+        markers = []
+        for loc, info in sorted(by_location.items(), key=lambda x: -x[1]['count']):
+            geo = geocache.get(loc)
+            if geo and geo is not None:
+                top_types = sorted(info['types'].items(), key=lambda x: -x[1])[:5]
+                markers.append({
+                    'lat': geo['lat'],
+                    'lon': geo['lon'],
+                    'location': loc,
+                    'count': info['count'],
+                    'top_types': top_types,
+                })
+        
+        self.json_response({'markers': markers, 'total_mapped': sum(m['count'] for m in markers), 'total_filtered': len(filtered)})
+
+    def handle_top_locations(self, parsed):
+        params = urllib.parse.parse_qs(parsed.query)
+        filtered = self.apply_filters(params)
+        
+        by_location = {}
+        for r in filtered:
+            loc = r['location'].strip()
+            if not loc:
+                continue
+            if loc not in by_location:
+                by_location[loc] = {'count': 0, 'types': {}, 'location_type': r['location_type']}
+            by_location[loc]['count'] += 1
+            ct = r['call_type']
+            by_location[loc]['types'][ct] = by_location[loc]['types'].get(ct, 0) + 1
+        
+        top = sorted(by_location.items(), key=lambda x: -x[1]['count'])[:50]
+        results = []
+        for loc, info in top:
+            top_types = sorted(info['types'].items(), key=lambda x: -x[1])[:3]
+            results.append({
+                'location': loc,
+                'count': info['count'],
+                'location_type': info['location_type'],
+                'top_types': top_types,
+            })
+        
+        self.json_response({'locations': results})
 
     def apply_filters(self, params):
         filtered = ALL_RECORDS
