@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Metro CFS Explorer</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+    --metro-blue: #003DA5;
+    --metro-blue-mid: #005DAA;
+    --metro-blue-dark: #002B45;
+    --metro-blue-light: #E8F0FE;
+    --metro-red: #E31837;
+    --white: #FFFFFF;
+    --gray-50: #F7F8FA;
+    --gray-100: #EEF0F4;
+    --gray-200: #D8DCE3;
+    --gray-300: #B0B7C3;
+    --gray-500: #6B7280;
+    --gray-700: #374151;
+    --gray-900: #111827;
+    --radius: 6px;
+    --font: 'Inter', -apple-system, 'Helvetica Neue', Arial, sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: var(--font); background: var(--gray-50); color: var(--gray-900); line-height: 1.5; }
+
+header {
+    background: var(--metro-blue-dark);
+    color: var(--white);
+    padding: 0;
+}
+.header-top {
+    background: var(--metro-blue);
+    padding: 0.6rem 2rem;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.header-top .pill {
+    background: rgba(255,255,255,0.15);
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+    font-weight: 600;
+    font-size: 0.7rem;
+}
+.header-main {
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.logo { display: flex; align-items: center; gap: 0.75rem; }
+.logo-mark {
+    display: flex; gap: 3px; transform: skewX(-15deg);
+}
+.logo-mark span { width: 5px; height: 28px; border-radius: 1px; }
+.logo-mark .r { background: var(--metro-red); }
+.logo-mark .w { background: var(--white); }
+.logo-mark .b { background: #6BA4E8; }
+.logo h1 { font-size: 1.4rem; font-weight: 800; letter-spacing: 0.02em; }
+.logo h1 small { font-weight: 400; font-size: 0.85rem; opacity: 0.7; margin-left: 0.5rem; }
+.header-stats { display: flex; gap: 2rem; }
+.header-stat { text-align: center; }
+.header-stat .val { font-size: 1.6rem; font-weight: 800; }
+.header-stat .lbl { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.6; }
+
+.layout { display: grid; grid-template-columns: 260px 1fr; min-height: calc(100vh - 110px); }
+
+.sidebar {
+    background: var(--white); border-right: 1px solid var(--gray-200);
+    padding: 1.25rem; overflow-y: auto; max-height: calc(100vh - 110px);
+}
+.sidebar h3 {
+    font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--gray-500); margin: 1rem 0 0.4rem; font-weight: 700;
+}
+.sidebar h3:first-child { margin-top: 0; }
+
+input, select {
+    width: 100%; padding: 0.45rem 0.6rem; background: var(--gray-50);
+    border: 1px solid var(--gray-200); border-radius: 4px; color: var(--gray-900);
+    font-family: var(--font); font-size: 0.8rem; margin-bottom: 0.4rem;
+}
+input:focus, select:focus { outline: none; border-color: var(--metro-blue); box-shadow: 0 0 0 2px rgba(0,61,165,0.15); }
+
+.btn {
+    display: inline-block; padding: 0.5rem 1rem; border-radius: 4px;
+    font-size: 0.8rem; font-weight: 600; border: none; cursor: pointer;
+    font-family: var(--font);
+}
+.btn-primary { background: var(--metro-blue); color: var(--white); width: 100%; margin-top: 0.5rem; }
+.btn-primary:hover { background: var(--metro-blue-dark); }
+.btn-outline { background: var(--white); border: 1px solid var(--gray-200); color: var(--gray-500); width: 100%; margin-top: 0.25rem; }
+.btn-outline:hover { border-color: var(--metro-blue); color: var(--metro-blue); }
+
+.content { padding: 1.5rem; overflow-y: auto; max-height: calc(100vh - 110px); }
+
+.tabs { display: flex; gap: 0; margin-bottom: 1.25rem; border-bottom: 2px solid var(--gray-100); }
+.tab {
+    padding: 0.6rem 1.2rem; font-size: 0.8rem; font-weight: 600;
+    color: var(--gray-500); cursor: pointer; border-bottom: 2px solid transparent;
+    margin-bottom: -2px; transition: all 0.2s;
+}
+.tab:hover { color: var(--gray-700); }
+.tab.active { color: var(--metro-blue); border-bottom-color: var(--metro-blue); }
+
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem; }
+.stat-card {
+    background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius);
+    padding: 1rem; text-align: center;
+}
+.stat-card .number { font-size: 1.6rem; font-weight: 800; color: var(--metro-blue); }
+.stat-card .label { font-size: 0.65rem; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.15rem; font-weight: 600; }
+
+.chart-container {
+    background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius);
+    padding: 1.25rem; margin-bottom: 0.75rem;
+}
+.chart-container h4 {
+    font-size: 0.7rem; color: var(--gray-500); margin-bottom: 0.75rem;
+    text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700;
+}
+
+.bar-chart { display: flex; flex-direction: column; gap: 0.25rem; }
+.bar-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; }
+.bar-label { width: 160px; text-align: right; color: var(--gray-500); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; font-weight: 500; }
+.bar-track { flex: 1; height: 18px; background: var(--gray-100); border-radius: 3px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+.bar-value { width: 55px; text-align: right; font-weight: 700; font-size: 0.75rem; color: var(--gray-700); flex-shrink: 0; }
+
+.month-chart { display: flex; align-items: flex-end; gap: 3px; height: 120px; }
+.month-bar {
+    flex: 1; background: var(--metro-blue); border-radius: 3px 3px 0 0;
+    transition: height 0.5s ease; position: relative; cursor: pointer; min-width: 20px;
+}
+.month-bar:hover { background: var(--metro-blue-dark); }
+.month-bar .tip {
+    display: none; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+    background: var(--gray-900); color: var(--white); padding: 0.25rem 0.5rem; border-radius: 4px;
+    font-size: 0.65rem; white-space: nowrap; margin-bottom: 4px;
+}
+.month-bar:hover .tip { display: block; }
+.month-labels { display: flex; gap: 3px; margin-top: 0.4rem; }
+.month-labels span { flex: 1; text-align: center; font-size: 0.6rem; color: var(--gray-500); min-width: 20px; font-weight: 600; }
+
+.hour-chart { display: flex; align-items: flex-end; gap: 2px; height: 100px; }
+.hour-bar {
+    flex: 1; background: var(--metro-red); border-radius: 2px 2px 0 0;
+    transition: height 0.5s; position: relative; cursor: pointer; opacity: 0.85;
+}
+.hour-bar:hover { opacity: 1; }
+.hour-bar .tip { display: none; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: var(--gray-900); color: var(--white); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.65rem; white-space: nowrap; margin-bottom: 4px; }
+.hour-bar:hover .tip { display: block; }
+.hour-labels { display: flex; gap: 2px; margin-top: 0.3rem; }
+.hour-labels span { flex: 1; text-align: center; font-size: 0.55rem; color: var(--gray-500); font-weight: 600; }
+
+.heatmap { display: grid; grid-template-columns: 80px repeat(24, 1fr); gap: 2px; }
+.heatmap .day-label { font-size: 0.65rem; color: var(--gray-500); display: flex; align-items: center; font-weight: 600; }
+.heatmap .cell { aspect-ratio: 1; border-radius: 2px; position: relative; cursor: pointer; transition: transform 0.15s; }
+.heatmap .cell:hover { transform: scale(1.3); z-index: 1; }
+.heatmap .cell .tip { display: none; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: var(--gray-900); color: var(--white); padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.6rem; white-space: nowrap; z-index: 2; }
+.heatmap .cell:hover .tip { display: block; }
+.heatmap-header { font-size: 0.55rem; color: var(--gray-500); text-align: center; font-weight: 600; }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+th {
+    text-align: left; padding: 0.5rem; color: var(--gray-500); font-weight: 700;
+    font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.04em;
+    border-bottom: 2px solid var(--gray-200); position: sticky; top: 0; background: var(--gray-50);
+}
+td { padding: 0.45rem 0.5rem; border-bottom: 1px solid var(--gray-100); }
+tr:hover td { background: var(--metro-blue-light); }
+.badge-sm {
+    display: inline-block; padding: 0.1rem 0.4rem; border-radius: 3px;
+    font-size: 0.65rem; font-weight: 600;
+    background: rgba(0,61,165,0.08); color: var(--metro-blue);
+}
+
+.pagination { display: flex; align-items: center; justify-content: space-between; margin-top: 0.75rem; font-size: 0.8rem; color: var(--gray-500); }
+.pagination button {
+    background: var(--white); border: 1px solid var(--gray-200); color: var(--gray-700);
+    padding: 0.3rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: 600;
+}
+.pagination button:hover { border-color: var(--metro-blue); color: var(--metro-blue); }
+.pagination button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.loading { text-align: center; padding: 3rem; color: var(--gray-500); }
+</style>
+</head>
+<body>
+
+<header>
+    <div class="header-top">
+        <span class="pill">TPIA 2026-0460</span>
+        METRO Department of Police & Traffic Management — Calls for Service Data (Jan–Dec 2025)
+    </div>
+    <div class="header-main">
+        <div class="logo">
+            <div class="logo-mark"><span class="r"></span><span class="w"></span><span class="b"></span></div>
+            <h1>METRO <small>CFS Explorer</small></h1>
+        </div>
+        <div class="header-stats" id="header-stats"></div>
+    </div>
+</header>
+
+<div class="layout">
+    <aside class="sidebar">
+        <h3>Search</h3>
+        <input type="text" id="f-search" placeholder="Location, type, police #...">
+
+        <h3>Date Range</h3>
+        <input type="date" id="f-from" value="2025-01-01">
+        <input type="date" id="f-to" value="2025-12-31">
+
+        <h3>Call Type</h3>
+        <select id="f-type"><option value="">All Types</option></select>
+
+        <h3>Location Type</h3>
+        <select id="f-location"><option value="">All Locations</option></select>
+
+        <h3>District</h3>
+        <select id="f-district"><option value="">All Districts</option></select>
+
+        <h3>Disposition</h3>
+        <select id="f-disposition"><option value="">All Dispositions</option></select>
+
+        <button class="btn btn-primary" onclick="applyFilters()">Search</button>
+        <button class="btn btn-outline" onclick="resetFilters()">Reset Filters</button>
+    </aside>
+
+    <main class="content">
+        <div class="tabs">
+            <div class="tab active" data-tab="overview" onclick="switchTab('overview')">Overview</div>
+            <div class="tab" data-tab="records" onclick="switchTab('records')">Records</div>
+            <div class="tab" data-tab="heatmap" onclick="switchTab('heatmap')">Heatmap</div>
+        </div>
+
+        <div id="tab-overview">
+            <div class="stats-grid" id="stats-cards"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+                <div class="chart-container">
+                    <h4>Calls by Month</h4>
+                    <div id="chart-month"></div>
+                    <div id="chart-month-labels" class="month-labels"></div>
+                </div>
+                <div class="chart-container">
+                    <h4>Calls by Hour of Day</h4>
+                    <div id="chart-hour"></div>
+                    <div id="chart-hour-labels" class="hour-labels"></div>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:0.75rem;">
+                <div class="chart-container">
+                    <h4>Top Call Types</h4>
+                    <div id="chart-types" class="bar-chart"></div>
+                </div>
+                <div class="chart-container">
+                    <h4>Top Location Types</h4>
+                    <div id="chart-locations" class="bar-chart"></div>
+                </div>
+            </div>
+            <div class="chart-container" style="margin-top:0.75rem;">
+                <h4>Disposition Breakdown</h4>
+                <div id="chart-dispositions" class="bar-chart"></div>
+            </div>
+        </div>
+
+        <div id="tab-records" style="display:none;">
+            <div id="records-table"></div>
+            <div class="pagination" id="pagination"></div>
+        </div>
+
+        <div id="tab-heatmap" style="display:none;">
+            <div class="chart-container">
+                <h4>Activity Heatmap — Day of Week × Hour of Day</h4>
+                <div id="heatmap"></div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+const API = '';
+let currentTab = 'overview';
+let currentPage = 1;
+const BLUE_SHADES = ['#003DA5','#005DAA','#0070C0','#2986CC','#4A9FD9','#6BB5E6','#8CCBF0','#A8D8F0','#BFE3F5','#D6EEFA','#003152','#004B87'];
+const RED_SHADES = ['#E31837','#C41530','#A51228','#D43050','#E85070'];
+
+function getFilters() {
+    const p = new URLSearchParams();
+    const q = document.getElementById('f-search').value;
+    const ct = document.getElementById('f-type').value;
+    const lt = document.getElementById('f-location').value;
+    const dist = document.getElementById('f-district').value;
+    const disp = document.getElementById('f-disposition').value;
+    const df = document.getElementById('f-from').value;
+    const dt = document.getElementById('f-to').value;
+    if (q) p.set('q', q);
+    if (ct) p.set('call_type', ct);
+    if (lt) p.set('location_type', lt);
+    if (dist) p.set('district', dist);
+    if (disp) p.set('disposition', disp);
+    if (df) p.set('date_from', df);
+    if (dt) p.set('date_to', dt);
+    return p.toString();
+}
+
+async function applyFilters() {
+    currentPage = 1;
+    await Promise.all([loadStats(), loadRecords(), loadHeatmap()]);
+}
+
+function resetFilters() {
+    document.getElementById('f-search').value = '';
+    document.getElementById('f-type').value = '';
+    document.getElementById('f-location').value = '';
+    document.getElementById('f-district').value = '';
+    document.getElementById('f-disposition').value = '';
+    document.getElementById('f-from').value = '2025-01-01';
+    document.getElementById('f-to').value = '2025-12-31';
+    applyFilters();
+}
+
+function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    document.getElementById('tab-overview').style.display = tab === 'overview' ? '' : 'none';
+    document.getElementById('tab-records').style.display = tab === 'records' ? '' : 'none';
+    document.getElementById('tab-heatmap').style.display = tab === 'heatmap' ? '' : 'none';
+}
+
+async function loadMeta() {
+    const meta = await (await fetch(`${API}/api/meta`)).json();
+    const typeSelect = document.getElementById('f-type');
+    meta.call_types.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; typeSelect.appendChild(o); });
+    const locSelect = document.getElementById('f-location');
+    meta.location_types.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; locSelect.appendChild(o); });
+    const distSelect = document.getElementById('f-district');
+    meta.districts.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = 'District ' + t; distSelect.appendChild(o); });
+    const dispSelect = document.getElementById('f-disposition');
+    meta.dispositions.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; dispSelect.appendChild(o); });
+}
+
+async function loadStats() {
+    const f = getFilters();
+    const stats = await (await fetch(`${API}/api/stats?${f}`)).json();
+
+    document.getElementById('header-stats').innerHTML = `
+        <div class="header-stat"><div class="val">${stats.total.toLocaleString()}</div><div class="lbl">Total Calls</div></div>
+        <div class="header-stat"><div class="val">${stats.by_type.length}</div><div class="lbl">Call Types</div></div>
+        <div class="header-stat"><div class="val">${stats.by_month.length ? Math.round(stats.total / stats.by_month.length).toLocaleString() : '-'}</div><div class="lbl">Avg/Month</div></div>
+    `;
+
+    document.getElementById('stats-cards').innerHTML = `
+        <div class="stat-card"><div class="number">${stats.total.toLocaleString()}</div><div class="label">Total Calls</div></div>
+        <div class="stat-card"><div class="number">${stats.by_type.length}</div><div class="label">Call Types</div></div>
+        <div class="stat-card"><div class="number">${stats.by_type[0] ? stats.by_type[0][0] : '-'}</div><div class="label">Most Common</div></div>
+        <div class="stat-card"><div class="number">${stats.by_month.length ? Math.round(stats.total / stats.by_month.length).toLocaleString() : '-'}</div><div class="label">Avg/Month</div></div>
+    `;
+
+    const maxMonth = Math.max(...stats.by_month.map(m => m[1]));
+    document.getElementById('chart-month').innerHTML = '<div class="month-chart">' +
+        stats.by_month.map(([m, c]) => {
+            const h = Math.max(5, (c / maxMonth) * 100);
+            return `<div class="month-bar" style="height:${h}%"><div class="tip">${m}: ${c.toLocaleString()}</div></div>`;
+        }).join('') + '</div>';
+    document.getElementById('chart-month-labels').innerHTML = stats.by_month.map(([m]) => {
+        const months = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        return `<span>${months[parseInt(m.split('-')[1])] || m}</span>`;
+    }).join('');
+
+    const hours = Array(24).fill(0);
+    stats.by_hour.forEach(([h, c]) => { hours[h] = c; });
+    const maxHour = Math.max(...hours);
+    document.getElementById('chart-hour').innerHTML = '<div class="hour-chart">' +
+        hours.map((c, h) => {
+            const ht = Math.max(3, (c / maxHour) * 100);
+            return `<div class="hour-bar" style="height:${ht}%"><div class="tip">${h}:00 — ${c.toLocaleString()}</div></div>`;
+        }).join('') + '</div>';
+    document.getElementById('chart-hour-labels').innerHTML = hours.map((_, h) => `<span>${h % 3 === 0 ? h : ''}</span>`).join('');
+
+    const topTypes = stats.by_type.slice(0, 12);
+    const maxType = topTypes[0]?.[1] || 1;
+    document.getElementById('chart-types').innerHTML = topTypes.map(([name, count], i) => `
+        <div class="bar-row">
+            <div class="bar-label" title="${name}">${name}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${(count/maxType)*100}%;background:${BLUE_SHADES[i%BLUE_SHADES.length]}"></div></div>
+            <div class="bar-value">${count.toLocaleString()}</div>
+        </div>
+    `).join('');
+
+    const topLocs = stats.by_location_type.slice(0, 10);
+    const maxLoc = topLocs[0]?.[1] || 1;
+    document.getElementById('chart-locations').innerHTML = topLocs.map(([name, count], i) => `
+        <div class="bar-row">
+            <div class="bar-label" title="${name}">${name}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${(count/maxLoc)*100}%;background:${BLUE_SHADES[(i+4)%BLUE_SHADES.length]}"></div></div>
+            <div class="bar-value">${count.toLocaleString()}</div>
+        </div>
+    `).join('');
+
+    const topDisp = stats.by_disposition.slice(0, 10);
+    const maxDisp = topDisp[0]?.[1] || 1;
+    document.getElementById('chart-dispositions').innerHTML = topDisp.map(([name, count], i) => `
+        <div class="bar-row">
+            <div class="bar-label" title="${name}">${name}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${(count/maxDisp)*100}%;background:${i===0?'#003DA5':BLUE_SHADES[(i+2)%BLUE_SHADES.length]}"></div></div>
+            <div class="bar-value">${count.toLocaleString()}</div>
+        </div>
+    `).join('');
+}
+
+async function loadRecords() {
+    const f = getFilters();
+    const data = await (await fetch(`${API}/api/search?${f}&page=${currentPage}&per_page=100`)).json();
+
+    document.getElementById('records-table').innerHTML = `
+        <table>
+            <thead><tr><th>Police #</th><th>Date/Time</th><th>HPD #</th><th>Call Type</th><th>Location Type</th><th>Location</th><th>Dist</th><th>Disposition</th></tr></thead>
+            <tbody>
+                ${data.results.map(r => `<tr>
+                    <td style="font-weight:600">${r.police_num}</td>
+                    <td style="white-space:nowrap;color:var(--gray-500)">${r.call_time}</td>
+                    <td>${r.hpd_num}</td>
+                    <td><span class="badge-sm">${r.call_type}</span></td>
+                    <td>${r.location_type}</td>
+                    <td style="font-weight:500">${r.location}</td>
+                    <td style="text-align:center">${r.dist}</td>
+                    <td>${r.disposition}</td>
+                </tr>`).join('')}
+            </tbody>
+        </table>
+    `;
+
+    document.getElementById('pagination').innerHTML = `
+        <span>Showing ${((currentPage-1)*100+1).toLocaleString()}–${Math.min(currentPage*100, data.total).toLocaleString()} of ${data.total.toLocaleString()}</span>
+        <div>
+            <button onclick="changePage(-1)" ${currentPage<=1?'disabled':''}>← Prev</button>
+            <span style="margin:0 0.5rem;font-weight:600;">Page ${currentPage} of ${data.pages}</span>
+            <button onclick="changePage(1)" ${currentPage>=data.pages?'disabled':''}>Next →</button>
+        </div>
+    `;
+}
+
+async function loadHeatmap() {
+    const f = getFilters();
+    const data = await (await fetch(`${API}/api/heatmap?${f}`)).json();
+
+    const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+    let maxVal = 0;
+    for (const v of Object.values(data.heatmap)) maxVal = Math.max(maxVal, v);
+
+    let html = '<div class="heatmap">';
+    html += '<div></div>';
+    for (let h = 0; h < 24; h++) html += `<div class="heatmap-header">${h}</div>`;
+
+    for (const day of days) {
+        html += `<div class="day-label">${day.slice(0,3)}</div>`;
+        for (let h = 0; h < 24; h++) {
+            const val = data.heatmap[`${day}|${h}`] || 0;
+            const intensity = maxVal ? val / maxVal : 0;
+            // Blue scale matching METRO brand
+            const r = Math.round(0 + (238 - 0) * (1 - intensity));
+            const g = Math.round(61 + (240 - 61) * (1 - intensity));
+            const b = Math.round(165 + (250 - 165) * (1 - intensity));
+            html += `<div class="cell" style="background:rgb(${r},${g},${b})"><div class="tip">${day} ${h}:00 — ${val.toLocaleString()}</div></div>`;
+        }
+    }
+    html += '</div>';
+    document.getElementById('heatmap').innerHTML = html;
+}
+
+function changePage(delta) { currentPage += delta; loadRecords(); }
+document.getElementById('f-search').addEventListener('keydown', e => { if (e.key === 'Enter') applyFilters(); });
+
+(async () => { await loadMeta(); await Promise.all([loadStats(), loadRecords(), loadHeatmap()]); })();
+</script>
+</body>
+</html>
